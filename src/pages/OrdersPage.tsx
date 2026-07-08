@@ -327,7 +327,7 @@ export default function OrdersPage() {
                       <th className="text-left p-4 font-medium text-muted-foreground">Order</th>
                       <th className="text-left p-4 font-medium text-muted-foreground">Phone</th>
                       <th className="text-left p-4 font-medium text-muted-foreground hidden sm:table-cell">Bundle</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">Network</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Network</th>
                       <th className="text-left p-4 font-medium text-muted-foreground">Amount</th>
                       <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">Commission</th>
                       <th className="text-left p-4 font-medium text-muted-foreground hidden lg:table-cell">Profit</th>
@@ -347,7 +347,7 @@ export default function OrdersPage() {
                         </td>
                         <td className="p-4 font-medium">{order.phoneNumber}</td>
                         <td className="p-4 hidden sm:table-cell text-muted-foreground text-sm">{order.bundleCode}</td>
-                        <td className="p-4 hidden md:table-cell">
+                        <td className="p-4">
                           <span className="uppercase text-xs font-semibold bg-muted px-2 py-1 rounded">{order.network}</span>
                         </td>
                         <td className="p-4 font-semibold">{formatCurrency(order.amount)}</td>

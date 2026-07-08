@@ -1,6 +1,6 @@
 import { authService } from "./auth";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://playmate-ravioli-overstate.ngrok-free.dev/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://data-bundle-special-2bst.onrender.com/api";
 
 class ApiClient {
   private baseURL: string;
