@@ -14,6 +14,7 @@ import OrdersPage from "@/pages/OrdersPage";
 import WithdrawalsPage from "@/pages/WithdrawalsPage";
 import MashupPage from "@/pages/MashupPage";
 import AgentPricingPage from "@/pages/AgentPricingPage";
+import { CheckerPortPage } from "@/pages/CheckerPortPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ export default function App() {
                 <Route path="/withdrawals" element={<WithdrawalsPage />} />
                 <Route path="/mashup" element={<MashupPage />} />
                 <Route path="/agent-pricing" element={<AgentPricingPage />} />
+                <Route path="/checkerport" element={<CheckerPortPage />} />
               </Route>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

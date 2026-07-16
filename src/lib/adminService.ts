@@ -185,6 +185,24 @@ export const adminService = {
     const res = await apiClient.put(`/admin/agents/mashup/pricing/bulk`, { bundleId, basePrice }) as ApiWrap<{ bundleId: string; basePrice: number; agentsUpdated: number }>;
     return res.data;
   },
+  
+  // Checker Agent Pricing
+  getAgentCheckerPricing: async (agentProfileId: string): Promise<any[]> => {
+    const res = await apiClient.get(`/admin/agents/${agentProfileId}/checker/pricing`) as ApiWrap<any[]>;
+    return res.data;
+  },
+  getCheckerPricingForService: async (serviceName: string): Promise<any[]> => {
+    const res = await apiClient.get(`/admin/agents/checker/pricing/service/${serviceName}`) as ApiWrap<any[]>;
+    return res.data;
+  },
+  setAgentCheckerBasePrice: async (agentProfileId: string, serviceName: string, basePrice: number, sellingPrice?: number): Promise<any> => {
+    const res = await apiClient.put(`/admin/agents/checker/pricing`, { agentProfileId, bundleId: serviceName, basePrice, sellingPrice: sellingPrice ?? null }) as ApiWrap<any>;
+    return res.data;
+  },
+  setBulkCheckerBasePrice: async (serviceName: string, basePrice: number): Promise<{ agentsUpdated: number }> => {
+    const res = await apiClient.put(`/admin/agents/checker/pricing/bulk`, { bundleId: serviceName, basePrice }) as ApiWrap<{ agentsUpdated: number }>;
+    return res.data;
+  },
 
   // Mashup Packages
   getMashupPackages: async (): Promise<AdminMashupPackage[]> => {

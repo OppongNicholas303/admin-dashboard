@@ -140,8 +140,11 @@ export default function OrdersPage() {
 
   const filtered = useMemo(() => orders.filter(o => {
     const s = search.toLowerCase();
-    return !s || o.phoneNumber.includes(s) || o.bundleCode.toLowerCase().includes(s) ||
-      o.id.includes(s) || o.userId.includes(s);
+    return !s || 
+      (o.phoneNumber && o.phoneNumber.includes(s)) || 
+      (o.bundleCode && o.bundleCode.toLowerCase().includes(s)) ||
+      (o.id && o.id.includes(s)) || 
+      (o.userId && o.userId.includes(s));
   }), [orders, search]);
 
   const totalRevenue   = filtered.filter(o => o.status === "COMPLETED" || o.status === "COMPLETE_BY_ADMIN").reduce((s, o) => s + o.amount, 0);

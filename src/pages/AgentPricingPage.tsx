@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminService } from "@/lib/adminService";
+import { getCheckerPricing } from "@/lib/checkerport";
 import { formatCurrency } from "@/lib/utils";
 import type { AdminAgent, Bundle, AgentBundlePricing, AdminMashupPackage, AgentMashupPricing } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import {
 
 type PricingItem = {
   id: string;
-  type: "STANDARD" | "MASHUP";
+  type: "STANDARD" | "MASHUP" | "CHECKER";
   code: string;
   name: string;
   dataSize: string;
@@ -63,6 +64,13 @@ function SetPriceDialog({
             parseFloat(basePrice),
             sellingPrice ? parseFloat(sellingPrice) : undefined
           )
+        : bundle.type === "CHECKER"
+        ? adminService.setAgentCheckerBasePrice(
+            agent.id,
+            bundle.code, // serviceName is stored in code
+            parseFloat(basePrice),
+            sellingPrice ? parseFloat(sellingPrice) : undefined
+          )
         : adminService.setAgentBasePrice(
             agent.id,
             bundle.id,
@@ -72,7 +80,7 @@ function SetPriceDialog({
     onSuccess: () => {
       toast.success(`Price updated for ${agent.businessName} — ${bundle.name}`);
       qc.invalidateQueries({ queryKey: ["agent-pricing", agent.id] });
-      qc.invalidateQueries({ queryKey: [bundle.type === "MASHUP" ? "mashup-pricing" : "bundle-pricing", bundle.id] });
+      qc.invalidateQueries({ queryKey: [bundle.type === "MASHUP" ? "mashup-pricing" : bundle.type === "CHECKER" ? "checker-pricing" : "bundle-pricing", bundle.id] });
       onClose();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -207,10 +215,12 @@ function BulkPriceDialog({
   const mutation = useMutation({
     mutationFn: () => bundle.type === "MASHUP"
       ? adminService.setBulkMashupBasePrice(bundle.id, parseFloat(basePrice))
+      : bundle.type === "CHECKER"
+      ? adminService.setBulkCheckerBasePrice(bundle.code, parseFloat(basePrice)) // serviceName
       : adminService.setBulkBasePrice(bundle.id, parseFloat(basePrice)),
     onSuccess: (result) => {
       toast.success(`Updated ${result.agentsUpdated} agents for ${bundle.name}`);
-      qc.invalidateQueries({ queryKey: [bundle.type === "MASHUP" ? "mashup-pricing" : "bundle-pricing", bundle.id] });
+      qc.invalidateQueries({ queryKey: [bundle.type === "MASHUP" ? "mashup-pricing" : bundle.type === "CHECKER" ? "checker-pricing" : "bundle-pricing", bundle.id] });
       onClose();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -301,9 +311,11 @@ function BundlePricingRow({
   const [bulkOpen, setBulkOpen] = useState(false);
 
   const { data: pricings = [], isLoading } = useQuery({
-    queryKey: [bundle.type === "MASHUP" ? "mashup-pricing" : "bundle-pricing", bundle.id],
+    queryKey: [bundle.type === "MASHUP" ? "mashup-pricing" : bundle.type === "CHECKER" ? "checker-pricing" : "bundle-pricing", bundle.id],
     queryFn: () => bundle.type === "MASHUP"
       ? adminService.getMashupPricingForBundle(bundle.id)
+      : bundle.type === "CHECKER"
+      ? adminService.getCheckerPricingForService(bundle.code)
       : adminService.getPricingForBundle(bundle.id),
     enabled: expanded,
   });
@@ -483,6 +495,14 @@ export default function AgentPricingPage() {
     queryFn: adminService.getMashupPackages,
   });
 
+  const { data: checkerConfigs = [], isLoading: loadingCheckerConfigs, refetch: refetchCheckerConfigs } = useQuery({
+    queryKey: ["admin-checker-pricing"],
+    queryFn: async () => {
+      const res = await getCheckerPricing();
+      return res.data;
+    },
+  });
+
   const { data: agents = [], isLoading: loadingAgents } = useQuery({
     queryKey: ["admin-agents"],
     queryFn: adminService.getAgents,
@@ -521,8 +541,26 @@ export default function AgentPricingPage() {
         minimumBasePrice: pkg.sellingPrice ?? 0,
       }));
 
-    return [...standardItems, ...mashupItems];
-  }, [bundles, mashupPackages]);
+    const checkerItems = checkerConfigs.map((config: any) => ({
+      id: config.id,
+      type: "CHECKER" as const,
+      code: config.serviceName,
+      name: config.serviceName === "WAEC" ? "WAEC Results Checker" :
+            config.serviceName === "NOVDEC" ? "NOV/DEC Results Checker" :
+            config.serviceName === "CSSPS" ? "CSSPS School Placement" :
+            config.serviceName === "SECURITY" ? "Security Services Forms" :
+            config.serviceName === "NURSING" ? "Nursing Training Forms" :
+            config.serviceName === "UNIVERSITY" ? "University Forms" : `${config.serviceName} Vouchers`,
+      dataSize: "Voucher",
+      network: "WEB",
+      costPrice: config.costPrice ?? 0,
+      sellingPrice: config.retailPrice ?? 0,
+      status: "ACTIVE",
+      minimumBasePrice: config.costPrice ?? 0,
+    }));
+
+    return [...standardItems, ...mashupItems, ...checkerItems];
+  }, [bundles, mashupPackages, checkerConfigs]);
 
   const filteredBundles = useMemo(() => {
     return pricingItems
@@ -539,11 +577,12 @@ export default function AgentPricingPage() {
   const { data: agentPricings = [], isLoading: loadingAgentPricings } = useQuery({
     queryKey: ["agent-pricing", selectedAgent],
     queryFn: async () => {
-      const [standard, mashup] = await Promise.all([
+      const [standard, mashup, checker] = await Promise.all([
         adminService.getAgentPricing(selectedAgent),
         adminService.getAgentMashupPricing(selectedAgent),
+        adminService.getAgentCheckerPricing(selectedAgent),
       ]);
-      return [...standard, ...mashup];
+      return [...standard, ...mashup, ...checker];
     },
     enabled: viewMode === "by-agent" && selectedAgent !== "ALL",
   });
@@ -551,7 +590,7 @@ export default function AgentPricingPage() {
   const agentPricingMap = useMemo(() => {
     const map: Record<string, AgentPricing> = {};
     agentPricings.forEach(p => {
-      const key = "mashupBundleId" in p ? p.mashupBundleId : p.bundleId;
+      const key = "serviceName" in p ? p.serviceName : "mashupBundleId" in p ? p.mashupBundleId : p.bundleId;
       if (key) map[key] = p;
     });
     return map;
@@ -634,16 +673,17 @@ export default function AgentPricingPage() {
                 <SelectItem value="MTN">MTN</SelectItem>
                 <SelectItem value="TELECEL">Telecel</SelectItem>
                 <SelectItem value="AIRTELTIGO">AirtelTigo</SelectItem>
+                <SelectItem value="WEB">Web (Checkers)</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" onClick={() => { refetchBundles(); refetchMashupPackages(); }}>
+            <Button variant="outline" size="icon" onClick={() => { refetchBundles(); refetchMashupPackages(); refetchCheckerConfigs(); }}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
 
           <Card>
             <CardContent className="p-0 overflow-x-auto">
-              {loadingBundles || loadingMashupPackages || loadingAgents ? (
+              {loadingBundles || loadingMashupPackages || loadingCheckerConfigs || loadingAgents ? (
                 <div className="p-8 text-center text-muted-foreground text-sm">Loading...</div>
               ) : filteredBundles.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground text-sm">No bundles found.</div>
