@@ -63,8 +63,8 @@ export function CheckerPortPage() {
     },
   });
 
-  const transactions = (transactionsData as any)?.data?.data || [];
-  const pricingList = (pricingData as any)?.data?.data || [];
+  const transactions = (transactionsData as any)?.data || [];
+  const pricingList = (pricingData as any)?.data || [];
 
   const filteredTransactions = transactions.filter((tx: any) => 
     tx.referenceId.toLowerCase().includes(searchTerm.toLowerCase()) ||

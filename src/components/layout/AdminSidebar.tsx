@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, Store, Package, ShoppingCart, Wallet,
-  LogOut, Menu, X, ChevronLeft, ChevronRight, Shield, Zap, Tag, FileText,
+  LogOut, Menu, X, ChevronLeft, ChevronRight, Shield, Zap, Tag, FileText, Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ const navItems = [
   { icon: Wallet,          label: "Withdrawals", path: "/withdrawals" },
   { icon: Zap,             label: "Mashup",      path: "/mashup" },
   { icon: FileText,        label: "CheckerPort", path: "/checkerport" },
+  { icon: Settings,        label: "Settings",    path: "/settings" },
 ];
 
 export function AdminSidebar() {
